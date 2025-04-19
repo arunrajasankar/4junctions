@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <title>Water tank problem</title>
+    <style>
+        body {
+            background-color: #464646;
+            margin: 0 auto;
+            text-align: center; 
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+        }
+        input[type=number] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        .inp--primary {
+            padding: 20px;
+            font-size: 17px;
+            text-align: center;
+            border-radius: 5px;
+            margin-top: 50px;
+        }
+        #renderArea {
+            background-color: beige;
+            margin: 50px 0;
+        }
+        #renderArea rect {
+            transition: all ease 0.3s;
+        }
+        p {
+            font-size: 19px;
+            color: #fff;
+            margin-top: 50px;
+        }
+        #totalUnits {
+            text-decoration: underline;
+        }
+    </style>
+    <script>
+        let oldVal = ""; // to check for the change
+        let totalInp = []; // the entire number of characters the user had input
+        let largestNum = 0; // the largest digit amongst the input
+        let initValForSVGRectX = 10; // the init value is for padding purpose and to add values for the position of the rectangles
+        const initValForSVGRectY = 10 // for padding purpose
+        let widthValForRect = 0; // the calculated width based on the number of digits in the input
+        let heightValForRect = 0; // the calculated height based on the largest number in the input
+        let totalRects = 0; // the total number of walls rendered
+        let waterFillArr = []; // Number of units of water that needs to be filled
+        let indexArr = []; // Array to get the starting index of the walls to fill in water
+
+        const createSVG = (details) => {
+            const {name, x, y, width=widthValForRect, height=heightValForRect, fill} = details;
+            const elem = document.createElementNS("http://www.w3.org/2000/svg", name);
+            elem.setAttribute("fill", fill);
+            elem.setAttribute("x", x);
+            elem.setAttribute("y", y);
+            elem.setAttribute("width", width);
+            elem.setAttribute("height", height);
+            return elem;
+        }
+
+        const createRect = (heightNum, fillColor) => {
+            const svgArea = document.getElementById("renderArea");
+            widthValForRect = (svgArea.clientWidth - 20) / totalInp.length;
+            const height = (svgArea.clientHeight - 20) / largestNum;
+            const arrVal = heightNum === "" ? 0 : parseInt(heightNum);
+            heightValForRect = height;
+            const elem = createSVG({name:"rect", x:initValForSVGRectX, y: (initValForSVGRectY + ((largestNum - arrVal) * height)), height:height*arrVal, fill: "#9f3b2d"});
+            initValForSVGRectX += widthValForRect;
+            return elem;
+        }
+
+        const clearSvg = () => {
+            document.getElementById("renderArea").innerHTML = "";
+            initValForSVGRectX = 10;
+        }
+        
+        const createFloor = () => {
+            return createSVG({name: "rect", x:"10", y:"calc(100% - 10px)", width:"calc(100% - 20px)", height: "2", fill: "#9f3b2d"});
+        }
+
+        const noDataVal = () => {
+            return "No data present";
+        }
+
+        const totalCalculator = (heightArr, indexArr) => {
+            let total = 0;
+            waterFillArr = [];
+            for(let i=0; i< heightArr.length-1; i++) {
+                const firstElem = heightArr[i].charAt(heightArr[i].length-1);
+                const nextElem = heightArr[i+1].charAt(0);
+                const diff = (indexArr[i+1] - indexArr[i]);
+                const unit = Math.min(firstElem, nextElem);
+                waterFillArr.push(Array(diff).fill(unit));
+                total+= diff * unit;
+            }
+            waterFillArr = waterFillArr.flat();
+            return total;
+        }
+
+        const fillWater = () => {
+            const startPos = indexArr[0];
+            for(let i=startPos; i < totalInp.length; i++) {
+                if (totalInp[i] === "0") {
+                    const elem = document.getElementById("renderArea").children[i];
+                    elem.setAttribute("height", waterFillArr[0] * heightValForRect);
+                    elem.setAttribute("fill", "#a4e1f8");
+                    elem.setAttribute("y", initValForSVGRectY + ((largestNum - waterFillArr[0]) * heightValForRect));
+                    waterFillArr.shift();
+                }
+            }
+        }
+        
+        const getTheLargestNum = (arr) => Math.max(...arr)
+        
+        const handleChange = () => {
+            const newVal = event.target.value;
+            if(oldVal === newVal) {
+                return;
+            }
+            if(newVal === "") {
+                clearSvg();
+            }
+            oldVal = newVal;
+            totalInp = newVal.split("");
+            const _arr = newVal.split("0");
+            indexArr = [];
+            const waterArr = [];
+            const numbersToSaveWater = _arr.filter((ele, index) => {
+                if(ele !== "") {
+                    indexArr.push(index);
+                    return ele;
+                }
+            });
+            if(!numbersToSaveWater.length > 1) {
+                return noDataVal();
+            }
+            largestNum = getTheLargestNum(totalInp);
+            totalRects = totalCalculator(numbersToSaveWater, indexArr);
+            clearSvg();
+            for(let i=0; i < totalInp.length; i++) {
+                document.getElementById("renderArea").appendChild(createRect(totalInp[i] ,"#9f3b2d"));
+            }
+            document.getElementById("renderArea").appendChild(createFloor());
+            fillWater();
+            document.getElementById("totalUnits").innerText = totalRects + (totalRects > 1 ? " units" : " unit");
+        }
+    </script>
+    <body>
+        <p>Enter the numbers <b>without</b> comma separated in the input box to build water container(s)</p>
+        <input onkeyup="handleChange()" onpaste="handleChange()" class="inp--primary" type="number" autofocus />
+        <p>A total of <b id="totalUnits"></b> can be stored in the pattern you have provided.</p>
+        <svg height="calc(100vh - 400px)" width="calc(100vw - 100px)" id="renderArea" />
+    </body>
+</html>
