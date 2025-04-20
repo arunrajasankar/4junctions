@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+    <title>Water tank problem</title>
+    <style>
+        body {
+            background-color: #464646;
+            margin: 0 auto;
+            text-align: center; 
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+        }
+        input[type=number] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        .inp--primary {
+            padding: 20px;
+            font-size: 17px;
+            text-align: center;
+            border-radius: 5px;
+            margin-top: 50px;
+        }
+        p {
+            color: #fff;
+        }
+        #maximumRevenueSpan {
+          text-decoration: underline;
+        }
+    </style>
+    <script>
+      let maximumRevenueVal = 0,
+        buildingCounts = {};
+      const buildingDetails = [
+          {key: "p", timeTaken: 4, revenue: 1000, text: "Pub"},
+          {key: "t", timeTaken: 5, revenue: 1500, text: "Theater"},
+          {key: "c", timeTaken: 10, revenue: 3000, text: "Commercial park"}
+      ];
+      const buildingTimeTakenArr = [5, 4, 10];
+      const textForKeys = {},
+        findingBuildingUsingDaysToBuild = {},
+        findingRevenueUsingDaysToBuild = {},
+        findingBuildingUsingRevenue = {};
+      buildingDetails.forEach((ele) => {
+        findingBuildingUsingDaysToBuild[ele.timeTaken] = ele.key;
+        findingRevenueUsingDaysToBuild[ele.timeTaken] = ele.revenue;
+        findingBuildingUsingRevenue[ele.revenue] = ele.key;
+        textForKeys[ele.key] = ele.text;
+      })
+
+      const calculatingPart = (building, arr) => {
+        if(building.timeTaken > arr.length) {
+          return;
+        }
+        let revenue = 0;
+        let _len = arr.length;
+        const localCount = {
+          p:0,
+          t:0,
+          c:0
+        };
+        while(building.timeTaken < _len) {
+          const minusedVal = _len - building.timeTaken;
+          revenue += building.revenue * minusedVal;
+          _len = minusedVal;
+          if(building.timeTaken >= _len) {
+            buildingTimeTakenArr.forEach((ele) => {
+              if(_len > ele) {
+                const minusedVal = _len - ele;
+                revenue += minusedVal * findingRevenueUsingDaysToBuild[ele];
+                localCount[findingBuildingUsingDaysToBuild[ele]]++;
+              }
+            })
+          }
+          localCount[findingBuildingUsingRevenue[building.revenue]]++;
+        }
+        if(revenue >= maximumRevenueVal) {
+          maximumRevenueVal = revenue;
+          const keyName = buildingCounts[maximumRevenueVal];
+          if(keyName === undefined) {
+            buildingCounts[maximumRevenueVal] = [localCount];
+          } else {
+            buildingCounts[maximumRevenueVal].push(localCount);
+          }
+        }
+      }
+      const resetValues = () => {
+        maximumRevenueVal = 0;
+        document.getElementById("maximumRevenueSpan").innerText = "";
+        document.getElementById("combinations").innerText = "";
+        buildingCounts = {};
+      }
+      const handleChange = () => {
+        resetValues();
+        const days = parseInt(event.target.value);
+        if(isNaN(days)) {
+          return;
+        }
+        const _arr = Array(days).fill(0);
+        for(let i=0; i < buildingDetails.length; i++) {
+          calculatingPart(buildingDetails[i], _arr);
+        }
+        document.getElementById("maximumRevenueSpan").innerText = maximumRevenueVal;
+        let combinationsStr = "";
+        buildingCounts[maximumRevenueVal].forEach((ele) => {
+          if(combinationsStr !== "") {
+            combinationsStr+=" or ";
+          }
+          Object.keys(ele).forEach((keys) => {
+            if(ele[keys] > 0) {
+              combinationsStr+= ele[keys] + " " + textForKeys[keys] + ",";
+            }
+          })
+          combinationsStr = combinationsStr.split("");
+          combinationsStr.pop();
+          combinationsStr = combinationsStr.join("");
+        })
+        document.getElementById("combinations").innerText = combinationsStr;
+      }
+    </script>
+    <body>
+        <p>Enter the number of days to calculate the maximum revenue (The minimum value should be 5 to create minimum revenue) </p>
+        <input onkeyup="handleChange()" onpaste="handleChange()" min="5" class="inp--primary" type="number" autofocus />
+        <p>Maximum revenue: <span id="maximumRevenueSpan"></span></p>
+        <p>can be acheived by building : <span id="combinations"></span></p>
+    </body>
+</html>
